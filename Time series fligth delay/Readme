@@ -1,0 +1,115 @@
+======================================================================
+PREDICCIÓN Y ANÁLISIS DE RETRASOS EN VUELOS (EE. UU.)
+======================================================================
+
+RESUMEN DEL PROYECTO
+--------------------
+Este proyecto combina análisis exploratorio de datos (EDA), ingeniería 
+de características avanzadas y modelado de series temporales para 
+comprender y pronosticar los retrasos promedio en las llegadas de 
+vuelos domésticos en los Estados Unidos (basado en datos históricos 
+de 2015).
+
+
+PROBLEMA DE NEGOCIO Y OBJETIVOS
+-------------------------------
+Los retrasos en los vuelos generan severas ineficiencias operativas, 
+disparan los costos logísticos y degradan la experiencia del usuario. 
+
+* Objetivo 1: Identificar patrones de comportamiento y cuellos de 
+  botella en los retrasos según la aerolínea y el aeropuerto de 
+  origen/destino.
+* Objetivo 2: Desarrollar un modelo predictivo robusto para anticipar 
+  el retraso promedio diario, permitiendo a las aerolíneas optimizar 
+  la asignación de recursos y mejorar la planeación estratégica.
+
+
+FLUJO DE TRABAJO (WORKFLOW)
+---------------------------
+[Limpieza de Datos] -> [EDA] -> [Agregación] -> [Feature Engineering] -> [Modelado y CV]
+
+1. Preparación y Limpieza de Datos
+   - Tratamiento analítico de valores faltantes e inválidos.
+   - Transformación y estandarización de variables temporales.
+
+2. Análisis Exploratorio de Datos (EDA)
+   - Evaluación de la distribución del volumen de vuelos por operador.
+   - Cálculo del impacto directo de los aeropuertos en el retraso.
+   - Generación de mapas de calor comparativos entre aerolíneas.
+
+3. Ingeniería de Características (Feature Engineering)
+   Los datos se agregaron a nivel diario para crear las siguientes características:
+   - Lags (Retrasos Históricos): lag_1, lag_2, lag_7, lag_14, lag_21, lag_28.
+   - Estadísticas Móviles: Media móvil (rolling_7) y desviación estándar móvil (rolling_std_7).
+   - Variables Cíclicas: Transformaciones seno/coseno del día de la semana y del año 
+     (dayofweek_sin, dayofyear_sin, dayofyear_cos) para capturar la estacionalidad.
+
+
+ANÁLISIS DE LA SERIE TEMPORAL
+-----------------------------
+Antes del modelado, se analizaron las propiedades estadísticas de la serie:
+* ACF (Autocorrelación): Reveló una fuerte dependencia temporal a corto plazo.
+* PACF (Autocorrelación Parcial): Determinó que el Lag 1 es el predictor más 
+  importante, seguido del Lag 2. La estacionalidad semanal fue moderada.
+
+
+BENCHMARK DE MODELOS EVALUADOS
+------------------------------
+Se utilizó una validación cruzada temporal estricta con TimeSeriesSplit para evitar 
+la fuga de datos (Data Leakage).
+
+Lugar | Modelo            | MAE  | RMSE | R2
+------------------------------------------------
+1     | ElasticNet        | 4.57 | 6.25 | 0.43
+2     | Ridge Regression  | 4.58 | 6.27 | 0.42
+3     | XGBoost           | 4.91 | 6.49 | 0.38
+4     | LightGBM          | 4.92 | 6.59 | 0.36
+5     | Random Forest     | 5.03 | 6.58 | 0.37
+
+Nota: Los modelos lineales (ElasticNet/Ridge) superaron a los algoritmos basados en 
+árboles. Esto sugiere que el comportamiento de los retrasos promedio agregados es 
+predominantemente autorregresivo y lineal, evitando el sobreajuste (overfitting).
+
+
+ATRIBUCIÓN DE CARACTERÍSTICAS (FEATURE IMPORTANCE)
+--------------------------------------------------
+Los coeficientes del modelo ganador (ElasticNet) muestran las variables más relevantes:
+
+* lag_1 (Retraso promedio del día anterior): 0.446
+* rolling_std_7 (Volatilidad de la última semana): 0.288
+* rolling_7 (Tendencia central de la última semana): 0.195
+* lag_21 (Retraso de hace 3 semanas): 0.125
+* lag_28 (Retraso de hace 4 semanas / ciclo mensual): 0.105
+
+El algoritmo eliminó automáticamente la mayoría de las variables cíclicas, confirmando 
+que la señal predictiva ya estaba capturada en los rezagos de la serie.
+
+
+CONCLUSIONES CLAVE
+------------------
+1. Efecto Cascada: El retraso del día anterior (lag_1) es el indicador con mayor 
+   impacto hacia el futuro inmediato.
+2. Suavizado de Tendencias: ElasticNet captura con precisión el rumbo general de la 
+   serie temporal, mitigando el ruido provocado por eventos atípicos extremos.
+
+
+STACK TECNOLÓGICO
+-----------------
+* Manipulación de Datos: Pandas, NumPy
+* Modelado Predictivo: Scikit-Learn, XGBoost, LightGBM
+* Análisis Estadístico: Statsmodels
+* Visualización: Matplotlib, Seaborn
+
+
+PRÓXIMOS PASOS (MEJORAS FUTURAS)
+--------------------------------
+* Integrar APIs de clima histórico en aeropuertos clave.
+* Cruzar los datos con calendarios de días festivos en EE. UU.
+* Desarrollar un modelo híbrido SARIMAX usando la congestión aeroportuaria como variable exógena.
+* Implementar arquitecturas de Deep Learning como LSTM o Temporal Fusion Transformers (TFT).
+
+
+AUTOR
+-----
+Julio César Valderrábano Hernández
+Científico de Datos / Analista de Series Temporales
